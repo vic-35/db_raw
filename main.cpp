@@ -17,16 +17,14 @@ int main()
     string x="read() function shall attempt to read nbyte bytes from the file associated with the open file descriptor"+std::to_string( db1.lenght());
 
 
-
-    db_raw_row row;
-    row.set_buf(db1.lenght(),x.length()+1,static_cast<void*>(const_cast<char*>( x.c_str() ))); // загрузка данных db_raw_row, для примера поле id заполняем размером файла
+    db1.add_row(db1.lenght(),x.length()+1,static_cast<void*>(const_cast<char*>( x.c_str() ))); // загрузка данных db_raw_row, для примера поле id заполняем размером файла
     // при загрузке строк не забывать про завершающий 0
-    db1.add_row(&row); // добавить запись db_raw_row
 
-    db_raw_row row1;
-    row1.set_buf(db1.lenght(),0,nullptr); // загрузка данных db_raw_row, для примера поле id заполняем размером файла
+
+
+    db1.add_row(db1.lenght(),0,nullptr); // загрузка данных db_raw_row, для примера поле id заполняем размером файла
     // нулевой буфер
-    db1.add_row(&row1); // запись db_raw_row
+
 
 
     // чтение базы с начала файла
@@ -41,7 +39,7 @@ int main()
         {
            cout << h.size << "-" << h.id << endl;
 
-           // читать содержимое           
+           // читать содержимое
            {
                uint32_t s_tmp=h.get_buf_size();
                if( s_tmp == 0)

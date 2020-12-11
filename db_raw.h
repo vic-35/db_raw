@@ -5,6 +5,7 @@
 #include <sys/stat.h>	/* S_IXXX flags */
 #include <sys/types.h>	/* mode_t */
 #include <string>
+#include <sstream>
 
 #ifdef linux
 #include <unistd.h>	/* close() */
@@ -46,14 +47,12 @@ public:
     db_raw_header hdr;
     db_raw_bottom bottom;
 
-    void set_buf(uint64_t _id,uint32_t _size_buf,void* _buf)
+    void set(uint64_t _id,uint32_t _size_buf)
     {
         hdr.id=_id;
         hdr.size= _size_buf+sizeof(db_raw_header)+sizeof(db_raw_bottom);
         bottom.size = hdr.size;
-        buf=_buf;
     }   
-    void* buf;
 };
 
 class db_raw // управление файлом БД
@@ -103,10 +102,17 @@ public:
     {
         return seek_db(0,SEEK_CUR); // позиция в файле
     }
-    bool add_row(db_raw_row* row)
+    bool add_row(uint64_t _id,std::stringstream& ss )
     {
+       ss.seekg(0, std::ios::end );
+       add_row(_id,ss.tellg() ,static_cast<void*>(const_cast<char*>( ss.str().c_str() )));
+    }
+    bool add_row(uint64_t _id,uint32_t _size_buf,void* buf)
+    {
+        db_raw_row row;
         go_bottom();
-        return wr_row(row);
+        row.set(_id,_size_buf);
+        return wr_row(&row,buf);
     }
 
     uint64_t lenght()
@@ -154,9 +160,9 @@ private:
         #endif
     }
 
-    bool wr_row(db_raw_row* row)
+    bool wr_row(db_raw_row* row,void *buf)
     {
-        if(wr(&row->hdr,sizeof(db_raw_header)) & wr(row->buf,row->hdr.get_buf_size()) & wr(&row->bottom,sizeof (db_raw_bottom)) )
+        if(wr(&row->hdr,sizeof(db_raw_header)) & wr(buf,row->hdr.get_buf_size()) & wr(&row->bottom,sizeof (db_raw_bottom)) )
         {
             return true;
         }
@@ -287,7 +293,10 @@ public:
 
       return get_next(hdr);
    }
-
+   ssize_t get_buf(void* buf,db_raw_header& h) // получить буфер данных
+   {
+       return get_buf(buf,h.get_buf_size());
+   }
    ssize_t get_buf(void* buf,uint32_t buf_size) // получить буфер данных
    {
        if(position != db->get_pos())
